@@ -1,0 +1,87 @@
+---
+title: "week 2 rmd"
+author: "GAURAV"
+date: "6/28/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+file=read.csv("activity.csv",sep = ",",header = T)
+
+file1<- file%>%filter(steps!="NA")
+file1$steps<- as.numeric(file1$steps)
+file1$interval<- as.factor(file1$interval)
+#lets view the summary of file without Na values
+summary(file1)
+spd1 <- aggregate(steps~date,file1,FUN = sum)
+head(spd1)
+summary(spd1)
+histogram<-ggplot(spd1,aes(x=steps))+geom_histogram(fill="lightgreen",col="black")
+histogram
+#formating the date in this dataset
+
+file1$date<- as.Date(file1$date,"%Y-%m-%d")
+spinterval <- aggregate(steps ~ interval, data = file1, FUN = mean)
+spinterval$interval<- as.integer(spinterval$interval)
+#lets us see the interval for maximum steps
+max_interval<- spinterval[which.max(spinterval$steps),]
+#plot for 5 min interval using histogram
+time_series<-ggplot(spinterval,aes(x=interval,y=steps))+geom_line(size=1,col="blue")
+time_series
+#difference btw hist and bar graphs
+
+barplot<-ggplot(spd1,aes(x=date,y=steps))+geom_bar(stat="identity",col="black",fill="lightblue")
+barplot
+
+#now lets see the total number of missing values in orginal dataset
+nomissingValue<- sum(is.na(file$steps))
+nomissingValue
+# for missing value ,replace them with mean of median values but for now i am using mean value
+mean(spinterval$steps)
+file2<-file
+file2$steps[which(is.na(file2$steps))]=mean(spinterval$steps)
+spd2<- aggregate(steps~date,data=file2,FUN=sum)
+spinterval2<-aggregate(steps~interval,data=file2,FUN=sum)
+ggplot(spd2,aes(x=steps))+geom_histogram(fill="lightgreen",col="black")
+ggplot(spinterval2,aes(x=interval,y=steps))+geom_line(size=1,col="blue")
+#now we will look into the difference of summarisies of all files
+summary(file2)
+summary(file1)
+summary(file)
+#in the 3rd quad the values has changed from 12.00 to 37.38(mean) and no other effect 
+#mean and median for factor dates is also the same
+mean(spd2$steps)
+median(spd2$steps)
+#plot btw thw both datasets (with no NA's ,with Na's)
+par(mfrow=c(1,2))
+
+hist(spd2$steps, 
+     main = "Total Steps per Day (no-NA)", 
+     xlab = "Number of Steps per Day", 
+     ylab = "Interval",
+     col="green",
+     breaks=50)
+##Histogram with the orginal dataset
+hist(spd1$steps, 
+     main="Total Steps per Day (Original)", 
+     xlab="Number of Steps per Day", 
+     ylab = "Interval",
+     col="orange",
+     breaks=50)
+
+#lets assign the dates according to weekends nd weekdays
+file3<- file%>%mutate(day_type= ifelse(weekdays(as.Date(file2$date,"%Y-%m-%d")) =="Saturday"
+                                        |weekdays(as.Date(file2$date,"%Y-%m-%d")) =="Sunday","Weekends","Weekdays"))
+#file3 is having new factor column (file contains Na Values)
+file3$day_type<- as.factor(file3$day_type)
+head(file3)
+#plotting the 5 min interval for both weekdays and weekends
+ggplot(data=file3,aes(x=interval,y=steps,color=day_type))+geom_line()+labs(title = "weekend vs weekdays total number of steps",x="interval",y="no of steps")+facet_wrap(~day_type,ncol = 1,nrow = 2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
